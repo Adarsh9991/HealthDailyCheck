@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Dada's Health Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --teal: #1D9E75; --teal-light: #E1F5EE; --teal-dark: #085041;
+    --coral: #D85A30; --coral-light: #FAECE7;
+    --amber: #BA7517; --amber-light: #FAEEDA;
+    --blue: #378ADD; --blue-light: #E6F1FB;
+    --purple: #7F77DD; --purple-light: #EEEDFE;
+    --red: #E24B4A; --red-light: #FCEBEB;
+    --gray: #888780; --gray-light: #F1EFE8; --gray-dark: #444441;
+    --bg: #F9F7F4; --card: #FFFFFF;
+    --text: #2C2C2A; --text-muted: #5F5E5A;
+    --border: rgba(0,0,0,0.10);
+    --radius: 16px; --radius-sm: 10px;
+    --shadow: 0 2px 16px rgba(0,0,0,0.07);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, #085041 0%, #1D9E75 60%, #0F6E56 100%);
+    padding: 52px 20px 28px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='28' stroke='rgba(255,255,255,0.05)' fill='none' stroke-width='1'/%3E%3C/svg%3E") repeat;
+  }
+  .header-icon { font-size: 36px; margin-bottom: 6px; position: relative; }
+  .header h1 {
+    font-family: 'Lora', serif;
+    font-size: 22px; font-weight: 500;
+    color: #fff; margin-bottom: 4px; position: relative;
+  }
+  .header p { font-size: 13px; color: rgba(255,255,255,0.75); position: relative; }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex; background: var(--card);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .tab {
+    flex: 1; padding: 14px 8px;
+    text-align: center; font-size: 13px; font-weight: 700;
+    color: var(--text-muted); cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s; letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+  .tab.active { color: var(--teal); border-bottom-color: var(--teal); }
+
+  /* ── Main ── */
+  .screen { display: none; padding: 20px 16px 100px; }
+  .screen.active { display: block; }
+
+  /* ── FAB ── */
+  .fab {
+    position: fixed; bottom: 28px; right: 20px; z-index: 200;
+    width: 58px; height: 58px; border-radius: 50%;
+    background: linear-gradient(135deg, #1D9E75, #085041);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 20px rgba(29,158,117,0.45);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .fab:active { transform: scale(0.93); box-shadow: 0 2px 10px rgba(29,158,117,0.35); }
+  .fab svg { width: 26px; height: 26px; fill: none; stroke: #fff; stroke-width: 2.5; stroke-linecap: round; }
+
+  /* ── Date Group ── */
+  .date-label {
+    font-size: 11px; font-weight: 800; letter-spacing: 1.2px;
+    text-transform: uppercase; color: var(--text-muted);
+    margin: 20px 0 10px;
+  }
+
+  .day-card {
+    background: var(--card); border-radius: var(--radius);
+    border: 1px solid var(--border); margin-bottom: 14px;
+    overflow: hidden; box-shadow: var(--shadow);
+  }
+  .day-card-header {
+    padding: 14px 16px; display: flex;
+    align-items: center; justify-content: space-between;
+    cursor: pointer; user-select: none;
+  }
+  .day-card-title { display: flex; align-items: center; gap: 10px; }
+  .day-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--teal); flex-shrink: 0;
+  }
+  .day-date { font-size: 15px; font-weight: 700; }
+  .day-count {
+    font-size: 12px; color: var(--text-muted);
+    background: var(--gray-light); padding: 3px 8px;
+    border-radius: 20px; font-weight: 600;
+  }
+  .day-chevron { font-size: 14px; color: var(--text-muted); transition: transform 0.2s; }
+  .day-card.open .day-chevron { transform: rotate(180deg); }
+
+  .readings-list { display: none; border-top: 1px solid var(--border); }
+  .day-card.open .readings-list { display: block; }
+
+  .reading-row {
+    padding: 12px 16px; display: flex;
+    align-items: center; gap: 12px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+  .reading-row:last-child { border-bottom: none; }
+  .reading-time {
+    font-size: 12px; font-weight: 700;
+    color: var(--text-muted); min-width: 54px;
+  }
+  .reading-pills { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+  .pill {
+    font-size: 12px; font-weight: 700;
+    padding: 4px 10px; border-radius: 20px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .pill-spo2 { background: var(--blue-light); color: #185FA5; }
+  .pill-sugar { background: var(--amber-light); color: #633806; }
+  .pill-bp { background: var(--coral-light); color: #4A1B0C; }
+  .pill-weight { background: var(--purple-light); color: #26215C; }
+  .pill-temp { background: var(--red-light); color: #501313; }
+
+  .send-btn {
+    background: none; border: 1.5px solid var(--teal);
+    color: var(--teal); font-family: 'Nunito', sans-serif;
+    font-size: 13px; font-weight: 700; padding: 8px 14px;
+    border-radius: 8px; cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    margin: 12px 16px 14px auto; width: fit-content;
+    transition: background 0.15s, color 0.15s;
+  }
+  .send-btn:active { background: var(--teal-light); }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 300;
+    align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card); border-radius: 22px 22px 0 0;
+    width: 100%; max-width: 480px;
+    padding: 8px 20px 36px;
+    max-height: 92vh; overflow-y: auto;
+    animation: slideUp 0.28s cubic-bezier(0.32,0.72,0,1);
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-handle {
+    width: 40px; height: 4px; background: #D3D1C7;
+    border-radius: 2px; margin: 10px auto 20px;
+  }
+  .modal-title {
+    font-family: 'Lora', serif; font-size: 20px; font-weight: 500;
+    margin-bottom: 20px; color: var(--text);
+  }
+
+  .field-group { margin-bottom: 16px; }
+  .field-label {
+    font-size: 12px; font-weight: 800; letter-spacing: 0.8px;
+    text-transform: uppercase; color: var(--text-muted);
+    margin-bottom: 7px; display: block;
+  }
+  .field-row { display: flex; gap: 10px; }
+  .field-input {
+    width: 100%; padding: 13px 14px; font-size: 16px;
+    font-family: 'Nunito', sans-serif; font-weight: 600;
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg); color: var(--text);
+    outline: none; transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  .field-input:focus { border-color: var(--teal); }
+
+  .field-hint {
+    font-size: 11px; color: var(--text-muted);
+    margin-top: 5px; display: block;
+  }
+
+  .reading-type-tabs {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px;
+  }
+  .type-chip {
+    padding: 7px 14px; border-radius: 20px; font-size: 13px;
+    font-weight: 700; cursor: pointer; border: 1.5px solid var(--border);
+    background: var(--bg); color: var(--text-muted);
+    transition: all 0.15s; user-select: none;
+  }
+  .type-chip.on { border-color: var(--teal); background: var(--teal-light); color: var(--teal-dark); }
+
+  .save-btn {
+    width: 100%; padding: 16px; border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, #1D9E75, #0F6E56);
+    border: none; font-family: 'Nunito', sans-serif;
+    font-size: 16px; font-weight: 800; color: #fff;
+    cursor: pointer; margin-top: 8px; letter-spacing: 0.3px;
+    transition: opacity 0.15s;
+  }
+  .save-btn:active { opacity: 0.85; }
+  .cancel-btn {
+    width: 100%; padding: 13px; border-radius: var(--radius-sm);
+    background: none; border: 1.5px solid var(--border);
+    font-family: 'Nunito', sans-serif; font-size: 15px;
+    font-weight: 700; color: var(--text-muted); cursor: pointer;
+    margin-top: 10px;
+  }
+
+  /* ── Share Sheet ── */
+  .share-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 400;
+    align-items: flex-end; justify-content: center;
+  }
+  .share-overlay.open { display: flex; }
+  .share-sheet {
+    background: var(--card); border-radius: 22px 22px 0 0;
+    width: 100%; max-width: 480px; padding: 8px 20px 36px;
+    animation: slideUp 0.28s cubic-bezier(0.32,0.72,0,1);
+  }
+  .share-title { font-size: 14px; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px; margin: 14px 0 12px; text-transform: uppercase; }
+  .msg-preview {
+    background: var(--bg); border-radius: var(--radius-sm);
+    border: 1px solid var(--border); padding: 14px;
+    font-size: 13px; line-height: 1.7; color: var(--text);
+    font-family: monospace; white-space: pre-wrap;
+    max-height: 240px; overflow-y: auto; margin-bottom: 14px;
+  }
+  .share-actions { display: flex; flex-direction: column; gap: 10px; }
+  .share-action-btn {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border); background: var(--bg);
+    font-family: 'Nunito', sans-serif; font-size: 15px;
+    font-weight: 700; color: var(--text); cursor: pointer;
+    transition: background 0.15s;
+  }
+  .share-action-btn:active { background: var(--gray-light); }
+  .share-action-btn .icon { font-size: 22px; width: 28px; text-align: center; }
+
+  /* ── Stats Screen ── */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--card); border-radius: var(--radius-sm);
+    border: 1px solid var(--border); padding: 14px;
+    text-align: center; box-shadow: var(--shadow);
+  }
+  .stat-icon { font-size: 24px; margin-bottom: 6px; }
+  .stat-val { font-size: 20px; font-weight: 800; color: var(--teal); }
+  .stat-lbl { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+  .empty-state {
+    text-align: center; padding: 60px 20px;
+    color: var(--text-muted);
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-state h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+  .empty-state p { font-size: 14px; line-height: 1.6; }
+
+  .toast {
+    position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+    background: var(--gray-dark); color: #fff;
+    padding: 10px 20px; border-radius: 24px; font-size: 13px;
+    font-weight: 700; z-index: 500; opacity: 0;
+    transition: opacity 0.2s; pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+
+  .section-title {
+    font-family: 'Lora', serif; font-size: 18px; font-weight: 500;
+    margin-bottom: 14px; color: var(--text);
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">🏥</div>
+  <h1>Dada's Health Tracker</h1>
+  <p>Post Liver Transplant · Daily Monitoring</p>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('log')">📋 Readings</div>
+  <div class="tab" onclick="switchTab('stats')">📊 Summary</div>
+</div>
+
+<!-- Readings Screen -->
+<div class="screen active" id="screen-log">
+  <div id="readings-container"></div>
+</div>
+
+<!-- Stats Screen -->
+<div class="screen" id="screen-stats">
+  <div id="stats-container"></div>
+</div>
+
+<!-- FAB -->
+<button class="fab" onclick="openModal()">
+  <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+
+<!-- Add Entry Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Add Reading</div>
+
+    <div class="field-group">
+      <label class="field-label">Date & Time</label>
+      <div class="field-row">
+        <input class="field-input" type="date" id="entry-date" style="flex:1">
+        <input class="field-input" type="time" id="entry-time" style="flex:1">
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">What are you recording?</label>
+      <div class="reading-type-tabs">
+        <div class="type-chip on" data-type="spo2" onclick="toggleType(this)">💙 SpO₂</div>
+        <div class="type-chip on" data-type="sugar" onclick="toggleType(this)">🟡 Sugar</div>
+        <div class="type-chip on" data-type="bp" onclick="toggleType(this)">❤️ Blood Pressure</div>
+        <div class="type-chip on" data-type="weight" onclick="toggleType(this)">⚖️ Weight</div>
+        <div class="type-chip on" data-type="temp" onclick="toggleType(this)">🌡️ Temp</div>
+      </div>
+    </div>
+
+    <div id="fields-spo2" class="field-group">
+      <label class="field-label">💙 SpO₂ (Oxygen Level)</label>
+      <input class="field-input" type="number" id="val-spo2" placeholder="e.g. 97" min="70" max="100" inputmode="decimal">
+      <span class="field-hint">Normal: 95–100%</span>
+    </div>
+
+    <div id="fields-sugar" class="field-group">
+      <label class="field-label">🟡 Blood Sugar</label>
+      <div class="field-row">
+        <input class="field-input" type="number" id="val-sugar" placeholder="e.g. 110" inputmode="decimal" style="flex:1">
+        <select class="field-input" id="val-sugar-type" style="flex:1">
+          <option value="Fasting">Fasting</option>
+          <option value="Post-meal">Post-meal</option>
+          <option value="Random">Random</option>
+        </select>
+      </div>
+      <span class="field-hint">Unit: mg/dL</span>
+    </div>
+
+    <div id="fields-bp" class="field-group">
+      <label class="field-label">❤️ Blood Pressure</label>
+      <div class="field-row">
+        <input class="field-input" type="number" id="val-bp-sys" placeholder="Systolic" inputmode="decimal" style="flex:1">
+        <input class="field-input" type="number" id="val-bp-dia" placeholder="Diastolic" inputmode="decimal" style="flex:1">
+        <input class="field-input" type="number" id="val-bp-pulse" placeholder="Pulse" inputmode="decimal" style="flex:1">
+      </div>
+      <span class="field-hint">e.g. 120 / 80 mmHg · Pulse bpm</span>
+    </div>
+
+    <div id="fields-weight" class="field-group">
+      <label class="field-label">⚖️ Weight</label>
+      <input class="field-input" type="number" id="val-weight" placeholder="e.g. 68.5" inputmode="decimal" step="0.1">
+      <span class="field-hint">Unit: kg</span>
+    </div>
+
+    <div id="fields-temp" class="field-group">
+      <label class="field-label">🌡️ Temperature</label>
+      <input class="field-input" type="number" id="val-temp" placeholder="e.g. 98.6" inputmode="decimal" step="0.1">
+      <span class="field-hint">Unit: °F (normal 97–99°F)</span>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Notes (optional)</label>
+      <input class="field-input" type="text" id="val-notes" placeholder="Any symptoms, observations...">
+    </div>
+
+    <button class="save-btn" onclick="saveEntry()">Save Reading</button>
+    <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- Share Sheet -->
+<div class="share-overlay" id="share-overlay" onclick="handleShareOverlayClick(event)">
+  <div class="share-sheet" id="share-sheet">
+    <div class="modal-handle"></div>
+    <div class="share-title">Send Readings</div>
+    <div class="msg-preview" id="msg-preview"></div>
+    <div class="share-actions">
+      <button class="share-action-btn" onclick="shareWhatsApp()"><span class="icon">💬</span> Send via WhatsApp</button>
+      <button class="share-action-btn" onclick="shareSMS()"><span class="icon">✉️</span> Send via SMS</button>
+      <button class="share-action-btn" onclick="copyText()"><span class="icon">📋</span> Copy to Clipboard</button>
+      <button class="cancel-btn" onclick="closeShare()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let entries = JSON.parse(localStorage.getItem('healthEntries') || '[]');
+let activeTypes = new Set(['spo2','sugar','bp','weight','temp']);
+let currentShareText = '';
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['log','stats'][i] === tab));
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + tab).classList.add('active');
+  if (tab === 'stats') renderStats();
+}
+
+function openModal() {
+  const now = new Date();
+  document.getElementById('entry-date').value = toLocalDateString(now);
+  document.getElementById('entry-time').value = now.toTimeString().slice(0,5);
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  clearForm();
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+function handleShareOverlayClick(e) {
+  if (e.target === document.getElementById('share-overlay')) closeShare();
+}
+
+function toggleType(el) {
+  const type = el.dataset.type;
+  el.classList.toggle('on');
+  if (el.classList.contains('on')) activeTypes.add(type);
+  else activeTypes.delete(type);
+  document.getElementById('fields-' + type).style.display = activeTypes.has(type) ? 'block' : 'none';
+}
+
+function clearForm() {
+  ['spo2','sugar','bp-sys','bp-dia','bp-pulse','weight','temp','notes'].forEach(id => {
+    const el = document.getElementById('val-' + id);
+    if (el) el.value = '';
+  });
+}
+
+function saveEntry() {
+  const date = document.getElementById('entry-date').value;
+  const time = document.getElementById('entry-time').value;
+  if (!date || !time) { showToast('Please set date & time'); return; }
+
+  const data = {};
+  if (activeTypes.has('spo2')) {
+    const v = document.getElementById('val-spo2').value;
+    if (v) data.spo2 = parseFloat(v);
+  }
+  if (activeTypes.has('sugar')) {
+    const v = document.getElementById('val-sugar').value;
+    if (v) data.sugar = { val: parseFloat(v), type: document.getElementById('val-sugar-type').value };
+  }
+  if (activeTypes.has('bp')) {
+    const sys = document.getElementById('val-bp-sys').value;
+    const dia = document.getElementById('val-bp-dia').value;
+    const pulse = document.getElementById('val-bp-pulse').value;
+    if (sys && dia) data.bp = { sys: parseInt(sys), dia: parseInt(dia), pulse: pulse ? parseInt(pulse) : null };
+  }
+  if (activeTypes.has('weight')) {
+    const v = document.getElementById('val-weight').value;
+    if (v) data.weight = parseFloat(v);
+  }
+  if (activeTypes.has('temp')) {
+    const v = document.getElementById('val-temp').value;
+    if (v) data.temp = parseFloat(v);
+  }
+  const notes = document.getElementById('val-notes').value.trim();
+  if (notes) data.notes = notes;
+
+  if (Object.keys(data).length === 0) { showToast('Enter at least one reading'); return; }
+
+  entries.push({ id: Date.now(), date, time, ...data });
+  entries.sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+  save();
+  closeModal();
+  renderLog();
+  showToast('Reading saved ✓');
+}
+
+function save() { localStorage.setItem('healthEntries', JSON.stringify(entries)); }
+
+function toLocalDateString(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function formatDateHeading(dateStr) {
+  const [y,m,day] = dateStr.split('-');
+  const d = new Date(y, m-1, day);
+  const today = new Date(); const yesterday = new Date(); yesterday.setDate(today.getDate()-1);
+  const tStr = toLocalDateString(today); const yStr = toLocalDateString(yesterday);
+  if (dateStr === tStr) return 'Today';
+  if (dateStr === yStr) return 'Yesterday';
+  return d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+function formatTime(t) {
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  return ((h % 12) || 12) + ':' + String(m).padStart(2,'0') + ' ' + ampm;
+}
+
+function buildPills(entry) {
+  let html = '';
+  if (entry.spo2 != null) html += `<span class="pill pill-spo2">💙 SpO₂ ${entry.spo2}%</span>`;
+  if (entry.sugar) html += `<span class="pill pill-sugar">🟡 ${entry.sugar.val} mg/dL (${entry.sugar.type})</span>`;
+  if (entry.bp) {
+    let bpTxt = `❤️ ${entry.bp.sys}/${entry.bp.dia} mmHg`;
+    if (entry.bp.pulse) bpTxt += ` · ${entry.bp.pulse} bpm`;
+    html += `<span class="pill pill-bp">${bpTxt}</span>`;
+  }
+  if (entry.weight != null) html += `<span class="pill pill-weight">⚖️ ${entry.weight} kg</span>`;
+  if (entry.temp != null) html += `<span class="pill pill-temp">🌡️ ${entry.temp}°F</span>`;
+  return html;
+}
+
+function renderLog() {
+  const container = document.getElementById('readings-container');
+  if (entries.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><h3>No readings yet</h3><p>Tap the + button below to add Dada's first health reading.</p></div>`;
+    return;
+  }
+
+  const byDate = {};
+  entries.forEach(e => { if (!byDate[e.date]) byDate[e.date] = []; byDate[e.date].push(e); });
+
+  let html = '';
+  Object.keys(byDate).sort((a,b) => b.localeCompare(a)).forEach(date => {
+    const list = byDate[date];
+    const rowsHtml = list.map(e => `
+      <div class="reading-row">
+        <span class="reading-time">${formatTime(e.time)}</span>
+        <div class="reading-pills">${buildPills(e)}</div>
+      </div>
+    `).join('');
+
+    html += `
+      <div class="day-card open" id="card-${date}">
+        <div class="day-card-header" onclick="toggleCard('${date}')">
+          <div class="day-card-title">
+            <div class="day-dot"></div>
+            <span class="day-date">${formatDateHeading(date)}</span>
+            <span class="day-count">${list.length} reading${list.length > 1 ? 's' : ''}</span>
+          </div>
+          <span class="day-chevron">▼</span>
+        </div>
+        <div class="readings-list">${rowsHtml}</div>
+        <button class="send-btn" onclick="openShare('${date}')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Send Readings
+        </button>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function toggleCard(date) {
+  document.getElementById('card-' + date).classList.toggle('open');
+}
+
+function buildMessage(date) {
+  const list = entries.filter(e => e.date === date);
+  if (!list.length) return '';
+  const [y,m,d] = date.split('-');
+  const dateObj = new Date(y, m-1, d);
+  const dateLabel = dateObj.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  let msg = `🏥 *Health Report — ${dateLabel}*\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+  list.forEach((e, i) => {
+    msg += `🕐 *Reading ${i+1} — ${formatTime(e.time)}*\n`;
+    if (e.spo2 != null) msg += `  • 💙 SpO₂ (Oxygen): *${e.spo2}%*\n`;
+    if (e.sugar) msg += `  • 🟡 Blood Sugar: *${e.sugar.val} mg/dL* (${e.sugar.type})\n`;
+    if (e.bp) {
+      msg += `  • ❤️ Blood Pressure: *${e.bp.sys}/${e.bp.dia} mmHg*`;
+      if (e.bp.pulse) msg += ` | Pulse: *${e.bp.pulse} bpm*`;
+      msg += '\n';
+    }
+    if (e.weight != null) msg += `  • ⚖️ Weight: *${e.weight} kg*\n`;
+    if (e.temp != null) msg += `  • 🌡️ Temperature: *${e.temp}°F*\n`;
+    if (e.notes) msg += `  • 📝 Note: ${e.notes}\n`;
+    msg += '\n';
+  });
+
+  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+  msg += `Sent via Dada's Health Tracker`;
+  return msg;
+}
+
+function openShare(date) {
+  currentShareText = buildMessage(date);
+  document.getElementById('msg-preview').textContent = currentShareText.replace(/\*/g, '');
+  document.getElementById('share-overlay').classList.add('open');
+}
+
+function closeShare() {
+  document.getElementById('share-overlay').classList.remove('open');
+}
+
+function shareWhatsApp() {
+  const encoded = encodeURIComponent(currentShareText);
+  window.open('https://wa.me/?text=' + encoded, '_blank');
+}
+
+function shareSMS() {
+  const plain = currentShareText.replace(/\*/g, '');
+  window.location.href = 'sms:?body=' + encodeURIComponent(plain);
+}
+
+function copyText() {
+  const plain = currentShareText.replace(/\*/g, '');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(plain).then(() => { showToast('Copied to clipboard ✓'); closeShare(); });
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = plain; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    showToast('Copied ✓'); closeShare();
+  }
+}
+
+function renderStats() {
+  const container = document.getElementById('stats-container');
+  if (entries.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><h3>No data yet</h3><p>Add readings to see summary statistics here.</p></div>`;
+    return;
+  }
+
+  const spo2Vals = entries.filter(e => e.spo2 != null).map(e => e.spo2);
+  const sugarVals = entries.filter(e => e.sugar).map(e => e.sugar.val);
+  const bpSys = entries.filter(e => e.bp).map(e => e.bp.sys);
+  const bpDia = entries.filter(e => e.bp).map(e => e.bp.dia);
+  const weightVals = entries.filter(e => e.weight != null).map(e => e.weight);
+  const tempVals = entries.filter(e => e.temp != null).map(e => e.temp);
+
+  const avg = arr => arr.length ? (arr.reduce((a,b) => a+b, 0) / arr.length).toFixed(1) : '—';
+  const last = arr => arr.length ? arr[arr.length - 1] : '—';
+
+  let html = `<p class="section-title">Overview</p>`;
+  html += `<div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-val">${new Set(entries.map(e=>e.date)).size}</div><div class="stat-lbl">Days tracked</div></div>
+    <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-val">${entries.length}</div><div class="stat-lbl">Total readings</div></div>
+  </div>`;
+
+  html += `<p class="section-title" style="margin-top:20px">Latest Values</p>`;
+  html += `<div class="stats-grid">`;
+  if (spo2Vals.length) html += `<div class="stat-card"><div class="stat-icon">💙</div><div class="stat-val">${spo2Vals[0]}%</div><div class="stat-lbl">Latest SpO₂</div></div>`;
+  if (sugarVals.length) html += `<div class="stat-card"><div class="stat-icon">🟡</div><div class="stat-val">${sugarVals[0]}</div><div class="stat-lbl">Latest Sugar (mg/dL)</div></div>`;
+  if (bpSys.length) html += `<div class="stat-card"><div class="stat-icon">❤️</div><div class="stat-val">${bpSys[0]}/${bpDia[0]}</div><div class="stat-lbl">Latest BP</div></div>`;
+  if (weightVals.length) html += `<div class="stat-card"><div class="stat-icon">⚖️</div><div class="stat-val">${weightVals[0]} kg</div><div class="stat-lbl">Latest Weight</div></div>`;
+  if (tempVals.length) html += `<div class="stat-card"><div class="stat-icon">🌡️</div><div class="stat-val">${tempVals[0]}°F</div><div class="stat-lbl">Latest Temp</div></div>`;
+  html += `</div>`;
+
+  html += `<p class="section-title" style="margin-top:20px">Averages (All Time)</p>`;
+  html += `<div class="stats-grid">`;
+  if (spo2Vals.length) html += `<div class="stat-card"><div class="stat-icon">💙</div><div class="stat-val">${avg(spo2Vals)}%</div><div class="stat-lbl">Avg SpO₂</div></div>`;
+  if (sugarVals.length) html += `<div class="stat-card"><div class="stat-icon">🟡</div><div class="stat-val">${avg(sugarVals)}</div><div class="stat-lbl">Avg Sugar</div></div>`;
+  if (bpSys.length) html += `<div class="stat-card"><div class="stat-icon">❤️</div><div class="stat-val">${avg(bpSys)}/${avg(bpDia)}</div><div class="stat-lbl">Avg BP</div></div>`;
+  if (weightVals.length) html += `<div class="stat-card"><div class="stat-icon">⚖️</div><div class="stat-val">${avg(weightVals)} kg</div><div class="stat-lbl">Avg Weight</div></div>`;
+  if (tempVals.length) html += `<div class="stat-card"><div class="stat-icon">🌡️</div><div class="stat-val">${avg(tempVals)}°F</div><div class="stat-lbl">Avg Temp</div></div>`;
+  html += `</div>`;
+
+  container.innerHTML = html;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+renderLog();
+</script>
+</body>
+</html>
