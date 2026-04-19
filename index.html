@@ -4,6 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>My Health Tracker</title>
+
+<!-- PWA Meta Tags -->
+<meta name="application-name" content="My Health">
+<meta name="description" content="Daily health monitoring for post liver transplant care">
+<meta name="theme-color" content="#085041">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="My Health">
+<meta name="msapplication-TileColor" content="#085041">
+<meta name="msapplication-tap-highlight" content="no">
+
+<!-- PWA Icons (inline SVG as data URI) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%23085041'/%3E%3Ctext x='256' y='340' font-size='280' text-anchor='middle' font-family='sans-serif'%3E🏥%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%23085041'/%3E%3Ctext x='256' y='340' font-size='280' text-anchor='middle' font-family='sans-serif'%3E🏥%3C/text%3E%3C/svg%3E">
+
+<!-- Inline Web Manifest -->
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22My%20Health%20Tracker%22%2C%22short_name%22%3A%22My%20Health%22%2C%22description%22%3A%22Daily%20health%20monitoring%20for%20post%20liver%20transplant%20care%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23F9F7F4%22%2C%22theme_color%22%3A%22%23085041%22%2C%22orientation%22%3A%22portrait%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%2520viewBox%3D'0%25200%2520512%2520512'%253E%253Crect%2520width%3D'512'%2520height%3D'512'%2520rx%3D'100'%2520fill%3D'%2523085041'%2F%253E%253Ctext%2520x%3D'256'%2520y%3D'340'%2520font-size%3D'280'%2520text-anchor%3D'middle'%253E%25F0%259F%2598%25B7%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Lora:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -291,13 +310,72 @@
     font-family: 'Lora', serif; font-size: 18px; font-weight: 500;
     margin-bottom: 14px; color: var(--text);
   }
+
+  /* ── Install Banner ── */
+  .install-banner {
+    display: none; position: fixed; bottom: 100px; left: 12px; right: 12px;
+    background: linear-gradient(135deg, #085041, #1D9E75);
+    border-radius: 14px; padding: 14px 16px;
+    z-index: 250; box-shadow: 0 8px 30px rgba(8,80,65,0.4);
+    animation: bannerSlide 0.3s cubic-bezier(0.32,0.72,0,1);
+  }
+  @keyframes bannerSlide { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .install-banner.show { display: flex; align-items: center; gap: 12px; }
+  .install-banner-icon { font-size: 28px; flex-shrink: 0; }
+  .install-banner-text { flex: 1; }
+  .install-banner-text strong { display: block; font-size: 14px; font-weight: 800; color: #fff; margin-bottom: 2px; }
+  .install-banner-text span { font-size: 12px; color: rgba(255,255,255,0.8); }
+  .install-banner-btns { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+  .install-yes {
+    background: #fff; color: #085041; border: none;
+    font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 800;
+    padding: 7px 14px; border-radius: 8px; cursor: pointer;
+  }
+  .install-no {
+    background: none; border: 1px solid rgba(255,255,255,0.4);
+    color: rgba(255,255,255,0.8); font-family: 'Nunito', sans-serif;
+    font-size: 12px; font-weight: 600; padding: 5px 14px;
+    border-radius: 8px; cursor: pointer;
+  }
+
+  /* ── iOS Install Guide ── */
+  .ios-guide-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55); z-index: 500;
+    align-items: flex-end; justify-content: center;
+  }
+  .ios-guide-overlay.open { display: flex; }
+  .ios-guide {
+    background: var(--card); border-radius: 22px 22px 0 0;
+    width: 100%; max-width: 480px; padding: 8px 24px 44px;
+    animation: slideUp 0.28s cubic-bezier(0.32,0.72,0,1);
+  }
+  .ios-guide h3 { font-size: 18px; font-weight: 800; margin-bottom: 20px; color: var(--text); }
+  .ios-step {
+    display: flex; align-items: flex-start; gap: 14px;
+    margin-bottom: 18px;
+  }
+  .ios-step-num {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--teal-light); color: var(--teal-dark);
+    font-weight: 800; font-size: 14px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ios-step-text strong { display: block; font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .ios-step-text span { font-size: 13px; color: var(--text-muted); }
+  .ios-close {
+    width: 100%; padding: 14px; border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, #1D9E75, #0F6E56);
+    border: none; font-family: 'Nunito', sans-serif;
+    font-size: 15px; font-weight: 800; color: #fff; cursor: pointer; margin-top: 8px;
+  }
 </style>
 </head>
 <body>
 
 <div class="header">
   <div class="header-icon">🏥</div>
-  <h1>Dada's Health Tracker</h1>
+  <h1>My Health Tracker</h1>
   <p>Post Liver Transplant · Daily Monitoring</p>
 </div>
 
@@ -413,6 +491,49 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Install Banner (Android/Desktop) -->
+<div class="install-banner" id="install-banner">
+  <div class="install-banner-icon">🏥</div>
+  <div class="install-banner-text">
+    <strong>Add to Home Screen</strong>
+    <span>Use as a app — works offline too!</span>
+  </div>
+  <div class="install-banner-btns">
+    <button class="install-yes" onclick="doInstall()">Install</button>
+    <button class="install-no" onclick="dismissBanner()">Not now</button>
+  </div>
+</div>
+
+<!-- iOS Install Guide -->
+<div class="ios-guide-overlay" id="ios-guide-overlay" onclick="closeIOSGuide(event)">
+  <div class="ios-guide">
+    <div class="modal-handle"></div>
+    <h3>📲 Add to Home Screen</h3>
+    <div class="ios-step">
+      <div class="ios-step-num">1</div>
+      <div class="ios-step-text">
+        <strong>Tap the Share button</strong>
+        <span>The square with an arrow at the bottom of Safari</span>
+      </div>
+    </div>
+    <div class="ios-step">
+      <div class="ios-step-num">2</div>
+      <div class="ios-step-text">
+        <strong>Scroll down & tap "Add to Home Screen"</strong>
+        <span>Look for the icon with a plus sign</span>
+      </div>
+    </div>
+    <div class="ios-step">
+      <div class="ios-step-num">3</div>
+      <div class="ios-step-text">
+        <strong>Tap "Add" in the top right</strong>
+        <span>The app will appear on your home screen instantly</span>
+      </div>
+    </div>
+    <button class="ios-close" onclick="closeIOSGuide()">Got it!</button>
+  </div>
+</div>
 
 <script>
 let entries = JSON.parse(localStorage.getItem('healthEntries') || '[]');
@@ -541,7 +662,7 @@ function buildPills(entry) {
 function renderLog() {
   const container = document.getElementById('readings-container');
   if (entries.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><h3>No readings yet</h3><p>Tap the + button below to add Dada's first health reading.</p></div>`;
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><h3>No readings yet</h3><p>Tap the + button below to add your first health reading.</p></div>`;
     return;
   }
 
@@ -610,7 +731,7 @@ function buildMessage(date) {
   });
 
   msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-  msg += `Sent via Dada's Health Tracker`;
+  msg += `Sent via My Health Tracker`;
   return msg;
 }
 
@@ -697,6 +818,70 @@ function showToast(msg) {
 }
 
 renderLog();
+
+// ── PWA: Service Worker (inline blob) ──
+const SW_CODE = `
+const CACHE = 'my-health-v1';
+self.addEventListener('install', e => { self.skipWaiting(); });
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(
+    fetch(e.request).then(res => {
+      const clone = res.clone();
+      caches.open(CACHE).then(c => c.put(e.request, clone));
+      return res;
+    }).catch(() => caches.match(e.request))
+  );
+});
+`;
+if ('serviceWorker' in navigator) {
+  try {
+    const blob = new Blob([SW_CODE], { type: 'application/javascript' });
+    const swURL = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swURL).catch(() => {});
+  } catch(e) {}
+}
+
+// ── PWA: Install Prompt ──
+let deferredPrompt = null;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+const isInStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+const dismissed = sessionStorage.getItem('installDismissed');
+
+if (!isInStandalone && !dismissed) {
+  if (isIOS) {
+    setTimeout(() => {
+      document.getElementById('ios-guide-overlay').classList.add('open');
+    }, 2500);
+  } else {
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      setTimeout(() => document.getElementById('install-banner').classList.add('show'), 2000);
+    });
+  }
+}
+
+function doInstall() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(() => { deferredPrompt = null; dismissBanner(); });
+}
+
+function dismissBanner() {
+  document.getElementById('install-banner').classList.remove('show');
+  sessionStorage.setItem('installDismissed', '1');
+}
+
+function closeIOSGuide(e) {
+  if (!e || e.target === document.getElementById('ios-guide-overlay')) {
+    document.getElementById('ios-guide-overlay').classList.remove('open');
+  }
+}
 </script>
 </body>
 </html>
